@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  
+  --color-primary: #1b5e20;
+  --color-primary-hover: #144317;
+  --color-primary-soft: rgba(27, 94, 32, 0.05);
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-4xl: 2.5rem;
+
+  --shadow-soft: 0 10px 25px -5px rgba(27, 94, 32, 0.05), 0 8px 10px -6px rgba(27, 94, 32, 0.05);
+  --shadow-strong: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--color-background)] text-[var(--color-foreground)] antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-[var(--shadow-soft)];
+  }
+  
+  .premium-card {
+    @apply bg-white border border-zinc-100 rounded-3xl shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-strong)] transition-all duration-300;
+  }
+
+  .impact-path {
+    @apply absolute bottom-0 left-0 h-1.5 rounded-full transition-all duration-500;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-zinc-200 rounded-full hover:bg-zinc-300 transition-colors;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* React Flow Customizations */
+.react-flow__node {
+  @apply !border-none !bg-transparent;
+}
+
+.react-flow__edge-path {
+  @apply !stroke-zinc-200 !stroke-[2px];
+}
+
+.react-flow__controls {
+  @apply !bg-white !border-zinc-100 !shadow-lg !rounded-xl overflow-hidden;
+}
+
+.react-flow__controls-button {
+  @apply !border-zinc-50 hover:!bg-zinc-50 !transition-colors;
+}
