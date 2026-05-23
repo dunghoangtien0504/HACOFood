@@ -15,14 +15,19 @@ import {
   listEmployees,
   listDepartments
 } from "@/lib/queries";
+import { useDemoSession } from "@/lib/auth/demoSession";
 
 const KIND_LABEL: Record<string, string> = {
   bonus: "Bonus", budget: "Ngân sách", hire: "Tuyển dụng", purchase: "Mua sắm", expense: "Chi phí",
 };
 
 export default function ApprovalsPage() {
+  const { user } = useDemoSession();
   useHACOUpdate();
-  
+
+  // Only these roles can approve/reject
+  const canApprove = ["ceo", "cfo", "hr_admin", "dept_head"].includes(user.role);
+
   const all = listApprovals();
   const sum = approvalsSummary();
   const employees = listEmployees();
@@ -141,7 +146,7 @@ export default function ApprovalsPage() {
                   {a.amount > 0 && (
                     <p className="text-lg font-black text-zinc-900">{formatCompactVND(a.amount)}</p>
                   )}
-                  {a.status === "pending" && (
+                  {a.status === "pending" && canApprove && (
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => approveApproval(a.id)}
@@ -156,6 +161,9 @@ export default function ApprovalsPage() {
                         <XCircle className="size-3" /> Từ chối
                       </button>
                     </div>
+                  )}
+                  {a.status === "pending" && !canApprove && (
+                    <span className="mt-3 inline-block px-2 py-1 bg-zinc-50 text-zinc-400 rounded-lg text-[9px] font-black uppercase">Chờ duyệt</span>
                   )}
                   {a.status !== "pending" && a.decidedAt && (
                     <p className="text-[10px] text-zinc-400 mt-2 flex items-center gap-1 justify-end">

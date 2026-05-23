@@ -3,17 +3,19 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bell, AlertCircle, AlertTriangle, Info, CheckCircle2, Filter, Search } from "lucide-react";
-import { listAlerts, alertsSummary, KPI_BY_ID, useHACOUpdate } from "@/lib/queries";
+import { listAlerts, alertsSummary, KPI_BY_ID, useHACOUpdate, resolveAlert } from "@/lib/queries";
 
 export default function AlertsPage() {
   useHACOUpdate();
   const all = listAlerts();
   const sum = alertsSummary();
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<string>("open");
   const [search, setSearch] = useState("");
 
   const filtered = all.filter((a) => {
-    if (filter !== "all" && a.severity !== filter) return false;
+    if (filter === "open" && a.resolvedAt) return false;
+    if (filter === "resolved" && !a.resolvedAt) return false;
+    if (!["open", "resolved", "all"].includes(filter) && a.severity !== filter) return false;
     if (search && !a.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -56,10 +58,10 @@ export default function AlertsPage() {
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
         <Filter className="size-4 text-zinc-400" />
-        {["all", "critical", "danger", "warning", "info"].map((s) => (
+        {["open", "resolved", "all", "critical", "danger", "warning", "info"].map((s) => (
           <button key={s} onClick={() => setFilter(s)}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-bold border capitalize",
-              filter === s ? "bg-zinc-900 text-white border-zinc-900" : "bg-white border-zinc-200 text-zinc-600")}>{s}</button>
+            className={cn("px-3 py-1.5 rounded-full text-xs font-bold border capitalize transition-colors",
+              filter === s ? "bg-zinc-900 text-white border-zinc-900" : "bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50")}>{s}</button>
         ))}
       </div>
 
@@ -68,20 +70,39 @@ export default function AlertsPage() {
         {filtered.map((a) => {
           const cfg = sevConfig[a.severity];
           const linkedKpi = a.linkedKpiId ? KPI_BY_ID[a.linkedKpiId] : null;
+          const isResolved = !!a.resolvedAt;
           return (
-            <div key={a.id} className={cn("flex gap-4 p-5 rounded-3xl border bg-white hover:shadow-md transition-all", cfg.border)}>
-              <div className={cn("size-12 rounded-xl flex items-center justify-center shrink-0", cfg.bg, cfg.text)}>{cfg.icon}</div>
+            <div key={a.id} className={cn(
+              "flex gap-4 p-5 rounded-3xl border hover:shadow-md transition-all",
+              isResolved ? "bg-zinc-50 border-zinc-100 opacity-70" : cn("bg-white", cfg.border)
+            )}>
+              <div className={cn("size-12 rounded-xl flex items-center justify-center shrink-0", isResolved ? "bg-zinc-100 text-zinc-400" : cn(cfg.bg, cfg.text))}>
+                {isResolved ? <CheckCircle2 className="size-5" /> : cfg.icon}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
-                  <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase", cfg.bg, cfg.text)}>{a.severity}</span>
+                  <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase", isResolved ? "bg-zinc-100 text-zinc-500" : cn(cfg.bg, cfg.text))}>
+                    {isResolved ? "resolved" : a.severity}
+                  </span>
                   <span className="text-[10px] font-bold text-zinc-400 uppercase">{a.source}</span>
                   {linkedKpi && <span className="text-[10px] font-bold text-emerald-600">↗ {linkedKpi.code}</span>}
                 </div>
-                <h3 className="text-sm font-black text-zinc-900">{a.title}</h3>
+                <h3 className={cn("text-sm font-black", isResolved ? "text-zinc-400 line-through" : "text-zinc-900")}>{a.title}</h3>
                 <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{a.detail}</p>
-                <p className="text-[10px] text-zinc-400 mt-2">{new Date(a.createdAt).toLocaleString("vi-VN")}</p>
+                <p className="text-[10px] text-zinc-400 mt-2">
+                  {isResolved
+                    ? `Đã xử lý: ${new Date(a.resolvedAt!).toLocaleString("vi-VN")}`
+                    : `Phát sinh: ${new Date(a.createdAt).toLocaleString("vi-VN")}`}
+                </p>
               </div>
-              <button className="self-start px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase rounded-lg shrink-0">Xử lý</button>
+              {!isResolved && (
+                <button
+                  onClick={() => resolveAlert(a.id)}
+                  className="self-start px-3 py-1.5 bg-zinc-900 hover:bg-zinc-700 text-white text-[10px] font-black uppercase rounded-lg shrink-0 transition-colors flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="size-3" /> Xử lý
+                </button>
+              )}
             </div>
           );
         })}

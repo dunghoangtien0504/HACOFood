@@ -960,6 +960,27 @@ export function listAlerts(): Alert[] {
   return ALERTS;
 }
 
+/** Đánh dấu cảnh báo đã xử lý */
+export function resolveAlert(alertId: string) {
+  const alert = hacoState.alerts.find((a) => a.id === alertId);
+  if (!alert || alert.resolvedAt) return;
+
+  alert.resolvedAt = new Date().toISOString();
+
+  hacoState.auditLog.unshift({
+    id: "aud_" + Date.now(),
+    actorId: "emp_001",
+    action: "update",
+    entity: "Alert",
+    entityId: alertId,
+    summary: `Cảnh báo "${alert.title}" đã được đánh dấu xử lý`,
+    createdAt: new Date().toISOString(),
+  });
+
+  saveState();
+  notify();
+}
+
 export function alertsSummary() {
   const open = ALERTS.filter((a) => !a.resolvedAt);
   return {
