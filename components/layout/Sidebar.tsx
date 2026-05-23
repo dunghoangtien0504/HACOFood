@@ -9,7 +9,12 @@ import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useDemoSession, ROLE_LABELS, ROLE_COLORS } from "@/lib/auth/demoSession";
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -24,6 +29,12 @@ export function Sidebar() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-close mobile sidebar on navigation
+  useEffect(() => {
+    onMobileClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const toggleGroup = (id: string) => {
     setOpenGroups((prev) =>
@@ -43,8 +54,8 @@ export function Sidebar() {
     return (
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen border-r border-zinc-100 bg-[#f8fafc] transition-all duration-500 ease-in-out",
-          "w-[280px]"
+          "fixed left-0 top-0 z-40 h-screen border-r border-zinc-100 bg-[#f8fafc] transition-all duration-300 ease-in-out",
+          "w-[280px] -translate-x-full md:translate-x-0"
         )}
       />
     );
@@ -53,9 +64,11 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen border-r border-zinc-100 bg-[#f8fafc] transition-all duration-500 ease-in-out",
-        "md:translate-x-0 -translate-x-full overflow-y-auto custom-scrollbar flex flex-col shadow-sm",
-        collapsed ? "w-[88px]" : "w-[280px]"
+        "fixed left-0 top-0 z-40 h-screen border-r border-zinc-100 bg-[#f8fafc] transition-all duration-300 ease-in-out",
+        "overflow-y-auto custom-scrollbar flex flex-col shadow-sm",
+        collapsed ? "md:w-[88px] w-[280px]" : "w-[280px]",
+        // Mobile: slide in/out; Desktop: always visible
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       {/* Brand */}

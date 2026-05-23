@@ -7,6 +7,7 @@ import {
   HelpCircle,
   ChevronDown,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -16,7 +17,7 @@ import GlobalSearch from "@/components/search/GlobalSearch";
 import HelpModal from "./HelpModal";
 import { useDemoSession, DEMO_USERS, ROLE_LABELS, ROLE_COLORS, setDemoUser } from "@/lib/auth/demoSession";
 
-export function Topbar() {
+export function Topbar({ onMobileMenuToggle }: { onMobileMenuToggle?: () => void }) {
   const router = useRouter();
   const { user, logout } = useDemoSession();
 
@@ -55,9 +56,18 @@ export function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b border-zinc-100 bg-white px-8">
-      {/* Search Bar - High Density */}
-      <div className="flex-1 max-w-2xl">
+    <header className="sticky top-0 z-30 flex h-16 md:h-20 w-full items-center justify-between border-b border-zinc-100 bg-white px-4 md:px-8 gap-4">
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMobileMenuToggle}
+        className="md:hidden p-2.5 rounded-xl hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-colors shrink-0"
+        aria-label="Mở menu"
+      >
+        <Menu className="size-5" />
+      </button>
+
+      {/* Search Bar */}
+      <div className="flex-1 max-w-2xl hidden sm:block">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 size-4 -translate-y-1/2 text-zinc-400 group-focus-within:text-[#1b5e20] transition-colors" />
           <input 
