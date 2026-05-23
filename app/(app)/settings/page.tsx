@@ -5,9 +5,12 @@ import {
   COMPANY, listDepartments, useHACOUpdate, resetDemoState,
   approveAllPendingApprovals, completeAllActiveTasks,
 } from "@/lib/queries";
+import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
 export default function SettingsPage() {
+  const { allowed, loading } = useRoleGuard(["ceo", "cfo", "hr_admin"]);
   useHACOUpdate();
+  if (loading || !allowed) return null;
   const departments = listDepartments();
 
   const sections = [

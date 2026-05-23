@@ -11,6 +11,7 @@ import {
   listEmployees, getEmployeeProfile, completionOf, statusOf,
   EMP_BY_ID, useHACOUpdate,
 } from "@/lib/queries";
+import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
 const PRIORITY_LABELS: Record<string, string> = {
   urgent: "Khẩn cấp",
@@ -20,7 +21,9 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export default function PeoplePage() {
+  const { allowed, loading } = useRoleGuard(["ceo", "hr_admin", "dept_head", "team_lead", "auditor"]);
   useHACOUpdate();
+  if (loading || !allowed) return null;
 
   const employees = listEmployees();
   const [activeId, setActiveId] = useState<string>("emp_021"); // Minh Anh — Senior Content

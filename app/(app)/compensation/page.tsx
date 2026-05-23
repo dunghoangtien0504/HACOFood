@@ -11,9 +11,12 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGri
 import {
   payrollSummary, DEFAULT_RULES, listDepartments, DEPT_BY_ID, useHACOUpdate, notify
 } from "@/lib/queries";
+import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
 export default function CompensationPage() {
+  const { allowed, loading } = useRoleGuard(["ceo", "cfo", "hr_admin"]);
   useHACOUpdate();
+  if (loading || !allowed) return null;
 
   const [activeTab, setActiveTab] = useState("Bảng lương");
   const [search, setSearch] = useState("");

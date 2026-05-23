@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ShieldCheck, Search, Filter } from "lucide-react";
 import { listAuditLog, EMP_BY_ID, useHACOUpdate } from "@/lib/queries";
+import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
 const ACTION_COLOR: Record<string, string> = {
   create: "bg-emerald-50 text-emerald-700",
@@ -15,7 +16,9 @@ const ACTION_COLOR: Record<string, string> = {
 };
 
 export default function AuditPage() {
+  const { allowed, loading } = useRoleGuard(["ceo", "cfo", "auditor"]);
   useHACOUpdate();
+  if (loading || !allowed) return null;
   const all = listAuditLog();
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");

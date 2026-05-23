@@ -9,9 +9,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import {
   DEFAULT_SCENARIOS, runForecast, getFinanceSnapshot, listKpis, KPI_BY_ID, simulateImpact, useHACOUpdate,
 } from "@/lib/queries";
+import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
 export default function ForecastPage() {
+  const { allowed, loading } = useRoleGuard(["ceo", "cfo"]);
   useHACOUpdate();
+  if (loading || !allowed) return null;
   const fin = getFinanceSnapshot();
   const allKpis = listKpis();
 
