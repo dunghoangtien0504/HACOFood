@@ -6,7 +6,12 @@
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "env": {
-    "DEMO_MODE": "false"
+    "DEMO_MODE": "true"
+  },
+  "functions": {
+    "app/api/ai-briefing/route.ts": {
+      "maxDuration": 60
+    }
   },
   "crons": []
 }
