@@ -18,9 +18,11 @@ import {
   EMP_BY_ID, KPI_BY_ID,
   cashflowSeries, calcRunwayMonths,
   FINANCE_SNAPSHOT,
+  useHACOUpdate,
 } from "@/lib/queries";
 
 export default function DashboardPage() {
+  useHACOUpdate();
   const head = dashboardHeadlines();
   const history = getFinanceHistory();
   const cashflow = cashflowSeries();
@@ -54,7 +56,7 @@ export default function DashboardPage() {
     { label: "Payroll Cost", val: formatCompactVND(head.payrollGross), sub: formatPercent(head.payrollOverRevenue * 100, 1), trend: "up" },
   ];
 
-  const sparkData = history.map((h) => ({ v: h.revenue / 1_000_000_000 }));
+  const sparkData = history.map((h: any) => ({ v: h.revenue / 1_000_000_000 }));
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">

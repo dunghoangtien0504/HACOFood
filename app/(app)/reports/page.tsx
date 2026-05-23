@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { FileText, Download, Search, Filter, Calendar, Loader2, CheckCircle2, Clock } from "lucide-react";
-import { listReports, EMP_BY_ID, DEPT_BY_ID } from "@/lib/queries";
+import { listReports, EMP_BY_ID, DEPT_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 const CAT_LABEL: Record<string, string> = {
   weekly: "Tuần", monthly: "Tháng", quarterly: "Quý", ad_hoc: "Đột xuất",
@@ -15,6 +15,7 @@ const FORMAT_COLOR: Record<string, string> = {
 };
 
 export default function ReportsPage() {
+  useHACOUpdate();
   const all = listReports();
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("all");

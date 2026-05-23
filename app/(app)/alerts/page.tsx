@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Bell, AlertCircle, AlertTriangle, Info, CheckCircle2, Filter, Search } from "lucide-react";
-import { listAlerts, alertsSummary, KPI_BY_ID } from "@/lib/queries";
+import { listAlerts, alertsSummary, KPI_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 export default function AlertsPage() {
+  useHACOUpdate();
   const all = listAlerts();
   const sum = alertsSummary();
   const [filter, setFilter] = useState<string>("all");

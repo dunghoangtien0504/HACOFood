@@ -11,7 +11,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   COMPANY, listDepartmentsWithKpi, getDepartmentSummary, EMP_BY_ID,
-  type DeptId,
+  type DeptId, useHACOUpdate,
 } from "@/lib/queries";
 
 // Map icon name (string trong demo.ts) → component lucide
@@ -58,6 +58,7 @@ const DeptNode = ({ data }: { data: any }) => (
 const nodeTypes = { dept: DeptNode };
 
 export default function OrgPage() {
+  useHACOUpdate();
   const departments = listDepartmentsWithKpi();
   const [selectedId, setSelectedId] = useState<DeptId | null>(null);
 

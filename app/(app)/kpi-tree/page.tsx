@@ -9,10 +9,11 @@ import {
 import { cn, formatCompactVND, formatPercent, formatNumber } from "@/lib/utils";
 import {
   getKpiTree, listKpis, summarizeKpis, runForecast, EMP_BY_ID,
-  type KpiTreeNode,
+  type KpiTreeNode, useHACOUpdate,
 } from "@/lib/queries";
 
 export default function KPITreePage() {
+  useHACOUpdate();
   const tree = getKpiTree("kpi_np");
   const allKpis = listKpis();
   const summary = summarizeKpis(allKpis);

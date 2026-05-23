@@ -7,9 +7,10 @@ import {
   TrendingUp, ArrowRight,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { listProjects, EMP_BY_ID, DEPT_BY_ID, KPI_BY_ID } from "@/lib/queries";
+import { listProjects, EMP_BY_ID, DEPT_BY_ID, KPI_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 export default function ProjectsPage() {
+  useHACOUpdate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const projects = listProjects();

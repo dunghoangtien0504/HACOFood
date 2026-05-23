@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ShieldCheck, Search, Filter } from "lucide-react";
-import { listAuditLog, EMP_BY_ID } from "@/lib/queries";
+import { listAuditLog, EMP_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 const ACTION_COLOR: Record<string, string> = {
   create: "bg-emerald-50 text-emerald-700",
@@ -15,6 +15,7 @@ const ACTION_COLOR: Record<string, string> = {
 };
 
 export default function AuditPage() {
+  useHACOUpdate();
   const all = listAuditLog();
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");

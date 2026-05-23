@@ -23,7 +23,7 @@ export default function FinancePage() {
 
   const fin = getFinanceSnapshot();
   const history = getFinanceHistory();
-  const cost = getCostBreakdown();
+  const cost = getCostBreakdown() as { name: string; value: number; color: string }[];
   const txs = listTransactions();
   const cf = cashflowSeries();
   const runway = calcRunwayMonths();
@@ -92,7 +92,7 @@ export default function FinancePage() {
               </div>
               <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history.map((h) => ({ ...h, totalCost: h.cogs + h.opex }))}>
+                  <AreaChart data={history.map((h: { cogs: number; opex: number; [k: string]: unknown }) => ({ ...h, totalCost: h.cogs + h.opex }))}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#1b5e20" stopOpacity={0.2} /><stop offset="95%" stopColor="#1b5e20" stopOpacity={0} /></linearGradient>
                     </defs>
@@ -155,7 +155,7 @@ export default function FinancePage() {
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
                   {txs.map((t) => {
-                    const dept = DEPT_BY_ID[t.departmentId];
+                    const dept = DEPT_BY_ID[t.departmentId as keyof typeof DEPT_BY_ID];
                     return (
                       <tr key={t.id} className="hover:bg-zinc-50/50">
                         <td className="py-4 font-bold text-zinc-400">{new Date(t.date).toLocaleDateString("vi-VN")}</td>
@@ -267,7 +267,7 @@ export default function FinancePage() {
           <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight mb-8">Dòng tiền 6 tháng (đv: tỷ VND)</h3>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cf.map((c) => ({ ...c, cashIn: c.cashIn / 1_000_000_000, cashOut: c.cashOut / 1_000_000_000, net: c.net / 1_000_000_000 }))}>
+              <BarChart data={cf.map((c: { period: string; cashIn: number; cashOut: number; net: number }) => ({ ...c, cashIn: c.cashIn / 1_000_000_000, cashOut: c.cashOut / 1_000_000_000, net: c.net / 1_000_000_000 }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f4" />
                 <XAxis dataKey="period" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />

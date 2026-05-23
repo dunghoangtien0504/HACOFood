@@ -12,15 +12,23 @@ import {
 } from "recharts";
 import {
   listDepartments, getDepartmentSummary, listKpisByDepartment,
-  EMP_BY_ID, completionOf, statusOf,
+  EMP_BY_ID, completionOf, statusOf, useHACOUpdate,
   type DeptId,
 } from "@/lib/queries";
 
 export default function DepartmentsPage() {
-  const departments = listDepartments();
-  const [activeDeptId, setActiveDeptId] = useState<DeptId>(departments[1].id); // Sales mặc định
+  useHACOUpdate();
 
-  const summary = getDepartmentSummary(activeDeptId)!;
+  const departments = listDepartments();
+  const [activeDeptId, setActiveDeptId] = useState<DeptId>("dept_sales"); // Sales mặc định
+
+  const currentDeptId = departments.some((d) => d.id === activeDeptId) ? activeDeptId : (departments[0]?.id || "dept_sales");
+  const summary = getDepartmentSummary(currentDeptId);
+
+  if (!summary) {
+    return <p className="text-xs text-zinc-400 py-8 italic text-center">Không có dữ liệu phòng ban.</p>;
+  }
+
   const dept = summary.department;
   const head = summary.head;
   const m = summary.metrics;
@@ -47,7 +55,7 @@ export default function DepartmentsPage() {
         <div className="flex items-center gap-3">
           <div className="relative">
             <select
-              value={activeDeptId}
+              value={currentDeptId}
               onChange={(e) => setActiveDeptId(e.target.value as DeptId)}
               className="appearance-none pl-9 pr-10 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-700 outline-none cursor-pointer"
             >

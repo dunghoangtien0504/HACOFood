@@ -5,9 +5,10 @@ import { cn, formatCompactVND, formatNumber } from "@/lib/utils";
 import {
   Target, Flag, CheckCircle2, AlertCircle, Search, Plus, ShieldCheck, ArrowRight, Rocket,
 } from "lucide-react";
-import { listObjectives, EMP_BY_ID, DEPT_BY_ID } from "@/lib/queries";
+import { listObjectives, EMP_BY_ID, DEPT_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 export default function OkrPage() {
+  useHACOUpdate();
   const [search, setSearch] = useState("");
   const objectives = listObjectives();
   const filtered = objectives.filter((o) => !search || o.title.toLowerCase().includes(search.toLowerCase()));

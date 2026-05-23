@@ -7,10 +7,11 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line } from "recharts";
 import {
-  DEFAULT_SCENARIOS, runForecast, getFinanceSnapshot, listKpis, KPI_BY_ID, simulateImpact,
+  DEFAULT_SCENARIOS, runForecast, getFinanceSnapshot, listKpis, KPI_BY_ID, simulateImpact, useHACOUpdate,
 } from "@/lib/queries";
 
 export default function ForecastPage() {
+  useHACOUpdate();
   const fin = getFinanceSnapshot();
   const allKpis = listKpis();
 

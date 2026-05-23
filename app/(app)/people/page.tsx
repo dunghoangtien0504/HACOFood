@@ -9,15 +9,30 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   listEmployees, getEmployeeProfile, completionOf, statusOf,
-  EMP_BY_ID,
+  EMP_BY_ID, useHACOUpdate,
 } from "@/lib/queries";
 
+const PRIORITY_LABELS: Record<string, string> = {
+  urgent: "Khẩn cấp",
+  high: "Cao",
+  normal: "Bình thường",
+  low: "Thấp",
+};
+
 export default function PeoplePage() {
+  useHACOUpdate();
+
   const employees = listEmployees();
   const [activeId, setActiveId] = useState<string>("emp_021"); // Minh Anh — Senior Content
   const [search, setSearch] = useState("");
 
-  const profile = getEmployeeProfile(activeId)!;
+  const currentActiveId = employees.some((e) => e.id === activeId) ? activeId : (employees[0]?.id || "");
+  const profile = getEmployeeProfile(currentActiveId);
+
+  if (!profile) {
+    return <p className="text-xs text-zinc-400 py-8 italic text-center">Không có dữ liệu nhân sự.</p>;
+  }
+
   const { employee: emp, department: dept, manager, payroll, ownedKpis, kpiCompletion, tasks } = profile;
   const tasksToday = profile.tasksToday;
 
@@ -63,7 +78,7 @@ export default function PeoplePage() {
                   onClick={() => setActiveId(e.id)}
                   className={cn(
                     "w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all",
-                    activeId === e.id ? "bg-emerald-50 border border-emerald-200" : "hover:bg-zinc-50"
+                    currentActiveId === e.id ? "bg-emerald-50 border border-emerald-200" : "hover:bg-zinc-50"
                   )}
                 >
                   <div className="size-8 rounded-lg bg-zinc-900 text-white text-[10px] font-black flex items-center justify-center shrink-0">{e.avatarInitials}</div>
@@ -207,7 +222,9 @@ export default function PeoplePage() {
                             t.status === "done" ? "text-zinc-400 line-through" : "text-zinc-900")}>{t.title}</span>
                         </div>
                         <span className={cn("text-[9px] font-bold uppercase shrink-0",
-                          t.priority === "urgent" ? "text-rose-500" : t.priority === "high" ? "text-amber-500" : "text-zinc-300")}>{t.priority}</span>
+                          t.priority === "urgent" ? "text-rose-500" : t.priority === "high" ? "text-amber-500" : "text-zinc-300")}>
+                          {PRIORITY_LABELS[t.priority] || t.priority}
+                        </span>
                       </div>
                     ))}
                   </div>

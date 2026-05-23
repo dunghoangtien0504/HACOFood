@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { listKpis, listDepartments, completionOf, statusOf, EMP_BY_ID, KPI_BY_ID } from "@/lib/queries";
+import { listKpis, listDepartments, completionOf, statusOf, EMP_BY_ID, KPI_BY_ID, useHACOUpdate } from "@/lib/queries";
 import { formatCompactVND, formatPercent, formatNumber, cn } from "@/lib/utils";
 import { Target, TrendingUp, AlertTriangle, CheckCircle2, Filter } from "lucide-react";
 
 export default function KpiPage() {
+  useHACOUpdate();
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const kpis = listKpis();
   const departments = listDepartments();

@@ -9,10 +9,12 @@ import {
 import { cn, formatCompactVND, formatPercent } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import {
-  payrollSummary, DEFAULT_RULES, listDepartments, DEPT_BY_ID,
+  payrollSummary, DEFAULT_RULES, listDepartments, DEPT_BY_ID, useHACOUpdate, notify
 } from "@/lib/queries";
 
 export default function CompensationPage() {
+  useHACOUpdate();
+
   const [activeTab, setActiveTab] = useState("Bảng lương");
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("all");
@@ -53,7 +55,10 @@ export default function CompensationPage() {
             <div className="flex items-center gap-2 bg-white border border-zinc-200 px-3 py-2 rounded-lg text-xs font-bold text-zinc-600">
               <Calendar className="size-3" /> Kỳ T5/2026 <ChevronDown className="size-3" />
             </div>
-            <button className="bg-[#1b5e20] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg shadow-[#1b5e20]/20 flex items-center gap-2">
+            <button
+              onClick={() => { notify(); alert("Đã cập nhật và đồng bộ dữ liệu bảng lương thời gian thực!"); }}
+              className="bg-[#1b5e20] hover:bg-[#154618] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg shadow-[#1b5e20]/20 flex items-center gap-2 transition-colors"
+            >
               <Plus className="size-3" /> Chạy lại payroll
             </button>
           </div>

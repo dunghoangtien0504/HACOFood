@@ -19,7 +19,7 @@ export default function AppLayout({
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 md:ml-[280px] has-[aside.w-\[88px\]]:md:ml-[88px]">
         <Topbar />
         <main className="flex-1 p-8 transition-all duration-300">
-          <div className="mx-auto max-w-[1600px] animate-fade-in">
+          <div className="mx-auto max-w-[1600px]">
             {children}
           </div>
         </main>

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { UserCheck, Plus, Users, Briefcase, Calendar } from "lucide-react";
-import { listJobReqs, DEPT_BY_ID } from "@/lib/queries";
+import { listJobReqs, DEPT_BY_ID, useHACOUpdate } from "@/lib/queries";
 
 const STATUS_COLOR: Record<string, string> = {
   open: "bg-blue-50 text-blue-600 border-blue-100",
@@ -12,6 +12,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function RecruitingPage() {
+  useHACOUpdate();
   const jobs = listJobReqs();
   const totalHeadcount = jobs.reduce((s, j) => s + j.headcount, 0);
   const totalFilled = jobs.reduce((s, j) => s + j.filled, 0);

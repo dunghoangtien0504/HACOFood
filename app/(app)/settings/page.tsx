@@ -1,9 +1,13 @@
 "use client";
 
-import { Settings as SettingsIcon, Building2, Users, Lock, Bell, Database, Globe } from "lucide-react";
-import { COMPANY, listDepartments } from "@/lib/queries";
+import { Settings as SettingsIcon, Building2, Users, Lock, Bell, Database, Globe, Play } from "lucide-react";
+import {
+  COMPANY, listDepartments, useHACOUpdate, resetDemoState,
+  approveAllPendingApprovals, completeAllActiveTasks,
+} from "@/lib/queries";
 
 export default function SettingsPage() {
+  useHACOUpdate();
   const departments = listDepartments();
 
   const sections = [
@@ -68,6 +72,48 @@ export default function SettingsPage() {
             <button className="mt-4 text-[10px] font-black text-[#1b5e20] uppercase">Cấu hình →</button>
           </div>
         ))}
+      </div>
+
+      {/* SIMULATION CONTROLS */}
+      <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm">
+        <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight mb-4 flex items-center gap-2">
+          <span className="size-9 rounded-xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center">
+            <Play className="size-5" />
+          </span>
+          Bảng điều khiển giả lập (Demo Controls)
+        </h3>
+        <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+          Sử dụng các hành động dưới đây để kiểm tra nhanh các luồng tự động (cascades) giữa Vận hành, Tài chính, Phê duyệt, và Lương thưởng trong thời gian thực.
+        </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          <button
+            onClick={() => {
+              resetDemoState();
+              alert("Đã khôi phục dữ liệu demo HACO Food OS về mặc định!");
+            }}
+            className="px-4 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-black uppercase transition-colors text-center"
+          >
+            Reset dữ liệu Demo
+          </button>
+          <button
+            onClick={() => {
+              approveAllPendingApprovals();
+              alert("Đã tự động phê duyệt tất cả các yêu cầu đang chờ!");
+            }}
+            className="px-4 py-3 bg-[#1b5e20]/10 hover:bg-[#1b5e20]/20 text-[#1b5e20] rounded-xl text-xs font-black uppercase transition-colors text-center"
+          >
+            Duyệt toàn bộ Pending
+          </button>
+          <button
+            onClick={() => {
+              completeAllActiveTasks();
+              alert("Đã hoàn thành toàn bộ các Task đang thực hiện!");
+            }}
+            className="px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-black uppercase transition-colors text-center"
+          >
+            Hoàn thành toàn bộ Task
+          </button>
+        </div>
       </div>
 
       <div className="bg-zinc-900 rounded-3xl p-6 text-white flex items-center justify-between">
