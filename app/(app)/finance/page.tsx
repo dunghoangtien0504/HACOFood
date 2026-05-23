@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
   getFinanceSnapshot, getFinanceHistory, getCostBreakdown,
-  listTransactions, cashflowSeries, calcRunwayMonths, DEPT_BY_ID,
+  listTransactions, cashflowSeries, calcRunwayMonths, DEPT_BY_ID, useHACOUpdate,
 } from "@/lib/queries";
 import { useRoleGuard } from "@/lib/auth/useRoleGuard";
 
@@ -21,6 +21,7 @@ const TABS = ["Tổng quan", "P&L", "Bảng cân đối", "Dòng tiền"];
 
 export default function FinancePage() {
   const { allowed, loading } = useRoleGuard(["ceo", "cfo", "auditor"]);
+  useHACOUpdate();
   const [activeTab, setActiveTab] = useLocalStorage("finance-active-tab", "Tổng quan");
   if (loading || !allowed) return null;
 

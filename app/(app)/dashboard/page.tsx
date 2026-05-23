@@ -15,18 +15,27 @@ import {
   dashboardHeadlines, getFinanceHistory,
   listKpis, listKpiSummariesByDepartment,
   runForecast, listAlerts, listAuditLog,
-  EMP_BY_ID, KPI_BY_ID,
+  EMP_BY_ID, KPI_BY_ID, EMPLOYEES,
+  listTasks, getEmployeeKpiCompletion, completionOf,
   cashflowSeries, calcRunwayMonths,
   FINANCE_SNAPSHOT,
   useHACOUpdate,
 } from "@/lib/queries";
+import { useDemoSession, ROLE_LABELS } from "@/lib/auth/demoSession";
 
 export default function DashboardPage() {
   useHACOUpdate();
+  const { user } = useDemoSession();
+
   const head = dashboardHeadlines();
   const history = getFinanceHistory();
   const cashflow = cashflowSeries();
   const runway = calcRunwayMonths();
+
+  // Role permissions
+  const canSeeFinancials = ["ceo", "cfo", "auditor"].includes(user.role);
+  const canSeePayroll = ["ceo", "cfo", "hr_admin"].includes(user.role);
+  const isLeader = ["ceo", "cfo", "hr_admin", "dept_head", "team_lead", "auditor"].includes(user.role);
 
   // KPI cảnh báo (đỏ + cam) — top 6 theo ưu tiên
   const allKpis = listKpis();
@@ -40,6 +49,13 @@ export default function DashboardPage() {
   const alerts = listAlerts().filter((a) => !a.resolvedAt).slice(0, 5);
   const recentAudit = listAuditLog().slice(0, 4);
 
+  // Personal data for employee/team_lead
+  const myEmployee = EMPLOYEES.find((e) => e.email === user.email);
+  const myTasks = myEmployee ? listTasks({ assigneeId: myEmployee.id }) : [];
+  const myKpiCompletion = myEmployee ? getEmployeeKpiCompletion(myEmployee.id) : 0;
+  const myOwnedKpis = allKpis.filter((k) => k.ownerEmployeeId === myEmployee?.id);
+  const myDeptKpis = allKpis.filter((k) => k.ownerDepartmentId === myEmployee?.departmentId);
+
   // 3 what-if scenarios
   const wifs = [
     { label: "Sales hụt 20%", res: runForecast([{ kpiId: "kpi_rev", deltaPercent: -0.2 }]) },
@@ -47,13 +63,20 @@ export default function DashboardPage() {
     { label: "Food Cost +8%", res: runForecast([{ kpiId: "kpi_food_cost", deltaPercent: 0.08 }]) },
   ];
 
-  const topCards = [
+  const topCards = canSeeFinancials ? [
     { label: "Doanh thu tháng", val: formatCompactVND(head.revenue), sub: "+8.4%", trend: "up" },
     { label: "Gross Profit", val: formatCompactVND(head.grossProfit), sub: formatPercent(head.grossMargin * 100, 1), trend: "up" },
     { label: "Net Profit", val: formatCompactVND(head.netProfit), sub: formatPercent(head.netMargin * 100, 1), trend: "up" },
     { label: "KPI Company", val: formatPercent(head.kpiCompletion * 100, 0), sub: `${head.kpiGreen}/${head.kpiGreen + head.kpiAmber + head.kpiRed} xanh`, trend: "up" },
     { label: "Headcount", val: String(head.headcount), sub: `${head.departmentCount} phòng ban`, trend: "none" },
     { label: "Payroll Cost", val: formatCompactVND(head.payrollGross), sub: formatPercent(head.payrollOverRevenue * 100, 1), trend: "up" },
+  ] : [
+    { label: "KPI công ty", val: formatPercent(head.kpiCompletion * 100, 0), sub: `${head.kpiGreen} xanh / ${head.kpiRed} đỏ`, trend: "up" },
+    { label: "KPI cá nhân", val: formatPercent(myKpiCompletion * 100, 0), sub: `${myOwnedKpis.length} KPI đang quản lý`, trend: "up" },
+    { label: "Task đang mở", val: String(myTasks.filter((t) => t.status !== "done").length), sub: `${myTasks.filter((t) => t.status === "done").length} đã xong`, trend: "none" },
+    { label: "Task overdue", val: String(myTasks.filter((t) => t.status !== "done" && new Date(t.dueDate) < new Date()).length), sub: "cần xử lý", trend: "none" },
+    { label: "Headcount cty", val: String(head.headcount), sub: `${head.departmentCount} phòng ban`, trend: "none" },
+    { label: "Cảnh báo mở", val: String(head.alerts.total), sub: `${head.alerts.critical} critical`, trend: "none" },
   ];
 
   const sparkData = history.map((h: any) => ({ v: h.revenue / 1_000_000_000 }));
@@ -61,6 +84,31 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <AIDashboardBriefing />
+
+      {/* Personalized banner for non-CEO/CFO/Auditor */}
+      {!canSeeFinancials && myEmployee && (
+        <div className="bg-white border border-zinc-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6">
+          <div className="size-14 rounded-2xl bg-[#1b5e20] text-white font-black flex items-center justify-center text-lg shrink-0">
+            {user.avatarInitials}
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">{ROLE_LABELS[user.role]} · {myEmployee.position}</p>
+            <h2 className="text-xl font-black text-zinc-900 mt-0.5">Xin chào, {myEmployee.fullName.split(" ").pop()}!</h2>
+          </div>
+          <div className="hidden md:grid grid-cols-3 gap-6 text-center">
+            {[
+              { l: "KPI cá nhân", v: `${Math.round(myKpiCompletion * 100)}%`, c: myKpiCompletion >= 0.95 ? "text-emerald-600" : myKpiCompletion >= 0.85 ? "text-amber-600" : "text-rose-600" },
+              { l: "Task còn lại", v: String(myTasks.filter((t) => t.status !== "done").length), c: "text-zinc-900" },
+              { l: "KPI phòng ban", v: `${Math.round(myDeptKpis.reduce((s, k) => s + completionOf(k), 0) / Math.max(myDeptKpis.length, 1) * 100)}%`, c: "text-zinc-900" },
+            ].map((m) => (
+              <div key={m.l}>
+                <p className={cn("text-2xl font-black", m.c)}>{m.v}</p>
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-0.5">{m.l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ROW 1 — KPI cards */}
       <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
@@ -139,42 +187,70 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight">Doanh thu 6 tháng</h3>
-            <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black">{formatPercent(((history.at(-1)!.revenue / history[0].revenue) - 1) * 100, 1)}</span>
+        {canSeeFinancials ? (
+          <div className="lg:col-span-4 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight">Doanh thu 6 tháng</h3>
+              <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black">{formatPercent(((history.at(-1)!.revenue / history[0].revenue) - 1) * 100, 1)}</span>
+            </div>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={history}>
+                  <Area type="monotone" dataKey="revenue" stroke="#1b5e20" strokeWidth={3} fillOpacity={0.1} fill="#1b5e20" />
+                  <XAxis dataKey="period" hide />
+                  <Tooltip formatter={(v) => formatCompactVND(Number(v))} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={history}>
-                <Area type="monotone" dataKey="revenue" stroke="#1b5e20" strokeWidth={3} fillOpacity={0.1} fill="#1b5e20" />
-                <XAxis dataKey="period" hide />
-                <Tooltip formatter={(v) => formatCompactVND(Number(v))} />
-              </AreaChart>
-            </ResponsiveContainer>
+        ) : (
+          /* Non-finance role: show personal task KPI distribution instead */
+          <div className="lg:col-span-4 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+            <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight mb-8">KPI phòng ban của tôi</h3>
+            <div className="space-y-4">
+              {myDeptKpis.slice(0, 5).map((k) => {
+                const comp = completionOf(k);
+                return (
+                  <div key={k.id} className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs font-black text-zinc-700 truncate max-w-[180px]">{k.name}</p>
+                      <span className={cn("text-[10px] font-black", comp >= 0.95 ? "text-emerald-600" : comp >= 0.85 ? "text-amber-600" : "text-rose-600")}>
+                        {Math.round(comp * 100)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                      <div className={cn("h-full rounded-full transition-all", comp >= 0.95 ? "bg-emerald-500" : comp >= 0.85 ? "bg-amber-500" : "bg-rose-500")}
+                        style={{ width: `${Math.min(100, Math.round(comp * 100))}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ROW 3 — Revenue vs Profit · Tasks · Incentive */}
       <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-5 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
-          <h3 className="text-xs font-black text-zinc-900 uppercase tracking-tight mb-8">Doanh thu vs Lợi nhuận 6 tháng</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={history}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f4" />
-                <XAxis dataKey="period" tickFormatter={(p) => p.slice(-2)} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `${(v / 1_000_000_000).toFixed(1)}T`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => formatCompactVND(Number(v))} />
-                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {canSeeFinancials && (
+          <div className="lg:col-span-5 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-tight mb-8">Doanh thu vs Lợi nhuận 6 tháng</h3>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={history}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f4" />
+                  <XAxis dataKey="period" tickFormatter={(p) => p.slice(-2)} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(v) => `${(v / 1_000_000_000).toFixed(1)}T`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v) => formatCompactVND(Number(v))} />
+                  <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="lg:col-span-4 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+        <div className={cn("bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm", canSeeFinancials ? "lg:col-span-4" : "lg:col-span-7")}>
           <div className="flex gap-4 mb-8">
             <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase">Đang mở: {head.tasksOpen}</div>
             <div className="px-3 py-1 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase">Overdue: {head.tasksOverdue}</div>
@@ -196,29 +272,35 @@ export default function DashboardPage() {
           <p className="mt-6 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">{Math.round(head.tasksLinkedKpi * 100)}% task đã gắn KPI</p>
         </div>
 
-        <div className="lg:col-span-3 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
-          <h3 className="text-xs font-black text-zinc-900 uppercase tracking-tight mb-8">Incentive snapshot</h3>
-          <div className="space-y-8">
-            <div>
-              <span className="text-3xl font-black text-zinc-900 tracking-tight">{formatCompactVND(head.bonusPool)}</span>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase mt-1">Bonus pool kỳ này</p>
-            </div>
-            <div className="space-y-4 pt-4 border-t border-zinc-50">
-              <div className="flex justify-between text-[10px] font-bold uppercase">
-                <span className="text-zinc-400">Gross payroll</span>
-                <span className="text-zinc-900">{formatCompactVND(head.payrollGross)}</span>
+        {canSeePayroll && (
+          <div className={cn("bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm", canSeeFinancials ? "lg:col-span-3" : "lg:col-span-5")}>
+            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-tight mb-8">Incentive snapshot</h3>
+            <div className="space-y-8">
+              <div>
+                <span className="text-3xl font-black text-zinc-900 tracking-tight">{formatCompactVND(head.bonusPool)}</span>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase mt-1">Bonus pool kỳ này</p>
               </div>
-              <div className="flex justify-between text-[10px] font-bold uppercase">
-                <span className="text-zinc-400">Payroll / Revenue</span>
-                <span className="text-emerald-500 font-black">{formatPercent(head.payrollOverRevenue * 100, 1)}</span>
-              </div>
-              <div className="flex justify-between text-[10px] font-bold uppercase">
-                <span className="text-zinc-400">Cash</span>
-                <span className="text-zinc-900">{formatCompactVND(head.cash)}</span>
+              <div className="space-y-4 pt-4 border-t border-zinc-50">
+                <div className="flex justify-between text-[10px] font-bold uppercase">
+                  <span className="text-zinc-400">Gross payroll</span>
+                  <span className="text-zinc-900">{formatCompactVND(head.payrollGross)}</span>
+                </div>
+                {canSeeFinancials && (
+                  <div className="flex justify-between text-[10px] font-bold uppercase">
+                    <span className="text-zinc-400">Payroll / Revenue</span>
+                    <span className="text-emerald-500 font-black">{formatPercent(head.payrollOverRevenue * 100, 1)}</span>
+                  </div>
+                )}
+                {canSeeFinancials && (
+                  <div className="flex justify-between text-[10px] font-bold uppercase">
+                    <span className="text-zinc-400">Cash</span>
+                    <span className="text-zinc-900">{formatCompactVND(head.cash)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ROW 4 — Dept ranking · Alerts · Recent activity */}
@@ -327,28 +409,54 @@ export default function DashboardPage() {
             <Row l="On-time rate" v={formatPercent((1 - head.tasksOverdue / Math.max(head.tasksTotal, 1)) * 100, 0)} c="text-emerald-500" />
           </div>
         </div>
-        <div className="bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
-          <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-8 flex items-center gap-2"><CreditCard className="size-3" /> Finance</h3>
-          <div className="space-y-4 text-xs">
-            <Row l="Cash" v={formatCompactVND(FINANCE_SNAPSHOT.cash)} />
-            <Row l="AR" v={formatCompactVND(FINANCE_SNAPSHOT.ar)} />
-            <Row l="AP" v={formatCompactVND(FINANCE_SNAPSHOT.ap)} />
-            <Row l="Runway" v={`${runway} tháng`} c="text-blue-500" />
-          </div>
-        </div>
-        <div className="bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
-          <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-8 flex items-center gap-2"><AlertTriangle className="size-3 text-amber-500" /> What-if Net Profit</h3>
-          <div className="space-y-4 text-right">
-            {wifs.map((w) => (
-              <div key={w.label} className="space-y-1">
-                <p className={cn("text-[11px] font-black", w.res.netProfitDelta >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                  {w.res.netProfitDelta >= 0 ? "+" : ""}{formatCompactVND(w.res.netProfitDelta)} NP
-                </p>
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">{w.label}</p>
+        {canSeeFinancials ? (
+          <>
+            <div className="bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-8 flex items-center gap-2"><CreditCard className="size-3" /> Finance</h3>
+              <div className="space-y-4 text-xs">
+                <Row l="Cash" v={formatCompactVND(FINANCE_SNAPSHOT.cash)} />
+                <Row l="AR" v={formatCompactVND(FINANCE_SNAPSHOT.ar)} />
+                <Row l="AP" v={formatCompactVND(FINANCE_SNAPSHOT.ap)} />
+                <Row l="Runway" v={`${runway} tháng`} c="text-blue-500" />
               </div>
-            ))}
+            </div>
+            <div className="bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-8 flex items-center gap-2"><AlertTriangle className="size-3 text-amber-500" /> What-if Net Profit</h3>
+              <div className="space-y-4 text-right">
+                {wifs.map((w) => (
+                  <div key={w.label} className="space-y-1">
+                    <p className={cn("text-[11px] font-black", w.res.netProfitDelta >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                      {w.res.netProfitDelta >= 0 ? "+" : ""}{formatCompactVND(w.res.netProfitDelta)} NP
+                    </p>
+                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">{w.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Non-finance roles: show personal tasks instead */
+          <div className="lg:col-span-2 bg-white border border-zinc-100 rounded-[2.5rem] p-8 shadow-sm">
+            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Zap className="size-3" /> Task của tôi</h3>
+            <div className="space-y-3">
+              {myTasks.filter((t) => t.status !== "done").slice(0, 6).map((t) => (
+                <div key={t.id} className="flex items-center justify-between border-b border-zinc-50 pb-3 last:border-0">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-900 truncate max-w-[260px]">{t.title}</p>
+                    <p className="text-[9px] font-bold text-zinc-400 mt-0.5 uppercase">Đến: {new Date(t.dueDate).toLocaleDateString("vi-VN")}</p>
+                  </div>
+                  <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase",
+                    t.status === "in_progress" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700")}>
+                    {t.status === "in_progress" ? "Đang làm" : "Blocked"}
+                  </span>
+                </div>
+              ))}
+              {myTasks.filter((t) => t.status !== "done").length === 0 && (
+                <p className="text-xs font-bold text-emerald-600 text-center py-4">🎉 Tất cả task đã hoàn thành!</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
